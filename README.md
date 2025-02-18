@@ -7,8 +7,8 @@ GitHub Actions에 워크플로우를 작성해 다음과 같이 배포가 진행
  (사전작업: Ubuntu 최신 버전 설치)
 
 1. Checkout 액션을 사용해 코드 내려받기
-2. `npm ci` 명령어로 프로젝트 의존성 설치
-3. `npm run build` 명령어로 Next.js 프로젝트 빌드
+2. `yarn install` 명령어로 프로젝트 의존성 설치
+3. `yarn build` 명령어로 Next.js 프로젝트 빌드
 4. AWS 자격 증명 구성
 5. 빌드된 파일을 S3 버킷에 동기화
 6. CloudFront 캐시 무효화
