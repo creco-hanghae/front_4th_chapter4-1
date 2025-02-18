@@ -17,28 +17,35 @@ GitHub Actions에 워크플로우를 작성해 다음과 같이 배포가 진행
 
 ## 주요 링크
 
-- S3 버킷 웹사이트 엔드포인트: _________
-- CloudFrount 배포 도메인 이름: _________
+- S3 버킷 웹사이트 엔드포인트: http://creco-hangehae-front-4th-chapter4-1.s3-website.ap-northeast-2.amazonaws.com
+- CloudFrount 배포 도메인 이름: https://d2zcu1ry4aum8p.cloudfront.net
 
 ## 주요 개념
 
-- GitHub Actions과 CI/CD 도구: _________
-- S3와 스토리지: _________
-- CloudFront와 CDN: _________
-- 캐시 무효화(Cache Invalidation): _________
-- Repository secret과 환경변수: _________
+![architecture](./architecture.png)
 
-- 과제 팁1: 다이어그램 작성엔 Draw.io, Lucidchart 등을 이용합니다.
-- 과제 팁2: 새로운 프로젝트 진행시, 프론트엔드팀 리더는 예시에 있는 다이어그램을 준비한 후, 전사 회의에 들어가 발표하게 됩니다. 미리 팀장이 되었다 생각하고 아키텍쳐를 도식화 하는걸 연습해봅시다.
-- 과제 팁3: 캐시 무효화는 배포와 장애 대응에 중요한 개념입니다. `.github/workflows/deployment.yml` 에서 캐시 무효화가 어떤 시점에 동작하는지 보고, 추가 리서치를 통해 반드시 개념을 이해하고 넘어갑시다.
-- 과제 팁4: 상용 프로젝트에선 DNS 서비스가 필요합니다. 도메인 구입이 필요해 본 과제에선 ‘Route53’을 붙이는걸 하지 않았지만, 실무에선 다음과 같은 인프라 구성이 필요하다는걸 알아둡시다.
-    - 그림
-        
-        ![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/83c75a39-3aba-4ba4-a792-7aefe4b07895/2669fd36-261b-4035-b863-e52cf14a3743/Untitled.png)
+- GitHub Actions과 CI/CD 도구: CI/CD 를 통해 GitHub 의 Hook 이벤트가 발생했을 때 소스코드를 기반으로 여러가지 검증을 하거나 자동화된 배포 작업을 처리할 수 있습니다. 그 중에서도 GitHub Actions는 GitHub 에서 제공하는 도구로, 워크플로우를 작성할 수 있습니다.
+- S3와 스토리지: S3 는 오브젝트 기반의 저장소입니다. 오브젝트 기반이기 때문에 우리가 흔히 알고있는 파일시스템과는 사뭇 다른 아키텍처로 동작되어 오해하기 쉽지만, 실제로는 디렉토리는 존재하지 않으며 Key 와 Object 만이 존재합니다. 단순히 파일의 내용과 위치만 기억하는 저장소라고 볼 수 있을 것 같습니다.
+- CloudFront와 CDN: CloudFront 는 AWS 에서 제공하는 CDN 중 하나입니다. CDN 은 정적 리소스 (HTML/JS/CSS 혹은 그 외의 어떤 파일)를 Origin 에서 가져와 각 지역(엣지)에 캐싱해두고 응답을 내려주는 네트워크 서비스입니다. AWS 는 이런 엣지를 통해서 요청된 위치에 따라 더 가까운 엣지의 캐싱을 활용하기 때문에 Any Open 인 경우에 유리하게 정적 리소스를 사용할 수 있도록 도와줍니다.
+- 캐시 무효화(Cache Invalidation): 위에서 말한 CDN 의 캐싱이 명시적으로 무효화되지 않는 한 캐싱된 리소스는 캐싱 정책에 따라 무효화를 하게 됩니다. 다만 공급자에 따라 캐싱정책을 따라갈 수도 있고 설정에 맞는 값으로 캐싱할 수도 있습니다. AWS CF 는 보통 캐싱정책을 준수하기 때문에 표준에 맞춰서 설정할 수 있습니다. 보통은 CDN 단에서의 캐싱은 매우 길게 잡고, 파일이 변경된 후 명시적으로 무효화 요청을 보내어 CDN의 캐싱을 제거해줍니다. 파이프라인을 잘 보면 업로드 된 이후에 그 파일을 기준으로 캐싱을 새로 쓰기 위해서 무효화 로직이 업로드 이후에 작성된 것을 알 수 있습니다.
+- Repository secret과 환경변수: CI/CD에서 동작하는 Shell 코드에서 환경변수나 시크릿이 필요한 경우가 있습니다. 보통 API Token이나 Access Token 이 그 사례인데, 이번 프로젝트에서는 AWS S3 에 파일을 업로드하고 CF 에 무효화 요청을 보내는 AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY 가 사용이 되어야합니다. 나머지 값은 사실 환경변수일 필요도 없지만, 유연하게 교체할 수 있다는 점에서 환경변수로 관리되도록 설정한 것 같습니다. (다만 CI 에서 *으로 표기되어 디버깅하기 어렵다는 단점은 존재할 것 같습니다.)
+
 
 ## CDN과 성능최적화
 
-- (CDN 도입 전과 도입 후의 성능 개선 보고서 작성)
+### CDN 적용 전 네트워크 탭
+![before](./before.png)
 
-- 과제 팁1 : CDN 도입후 성능 개선 보고서 영역은 [프론트엔드 개발자를 위한 CloudFront ](https://www.notion.so/CloudFront-2c0653cb130f42b2b21078389511cca2?pvs=21)에서 네트워크 탭을 비교한 영역을 참고해주세요. **이미지와 수치등을 표로 정리**해서 보여주면 가독성이 높은 보고서가 됩니다.
-- 과제 팁2 : 저장소 → 스토리지 → CDN을 통해 정적파일을 배포하는 방식을 이해하지 못하면 다양한 기술 문서를 이해하지 못합니다. [링크](https://toss.tech/article/engineering-note-9)로 첨부한 문서를 보고 실무에서 이런 네트워크 지식이 어떻게 쓰이는지 맛보기 해보세요.
+### CDN 적용 후 네트워크 탭
+![after](./after.png)
+
+- 전체적으로 내려받는 Size 가 줄었습니다.
+- 바로 br 압축 기술이 적용되었기 때문입니다.
+
+![br-compress](./br-compress.png)
+
+- 이후에도 학습자료에 나와있던 "Host Single Page Applications (SPA) with Tiered TTLs on CloudFront and S3"를 참고해서 js / css / woff / 그외에 대해 캐싱정책을 다르게 수정했습니다.
+
+![cache-control](./cache-control.png)
+
+- 이를 통해 실제로 CDN 에 저장되는 캐싱 기간을 늘릴 수 있고, 같은 유저에 대해서 브라우저단 캐싱이 생기기 때문에 두번 재 접속부터는 매우 빠르게 접속이 가능합니다.
